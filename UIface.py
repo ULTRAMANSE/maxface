@@ -5,10 +5,10 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (QApplication, QMenuBar, QGridLayout, QPushButton, QDialog,
                              QLabel, QTableView, QHeaderView, QLineEdit, QFormLayout, QMessageBox)
 from PyQt5.QtGui import QPixmap, QFont, QImage
-from PyQt5.QtCore import QDate, QTime, QTimer, Qt
+from PyQt5.QtCore import QDate, QTime, QTimer, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtSql import QSqlDatabase, QSqlQueryModel
 from PyQt5.Qt import QThread, QMutex
-from skimage import io as io2
+# from skimage import io as io2
 from face_dbinit import *
 import numpy as np
 import cv2
@@ -19,7 +19,7 @@ facerec = dlib.face_recognition_model_v1("./model/dlib_face_recognition_resnet_m
 # Dlib 预测器
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor('./model/shape_predictor_68_face_landmarks.dat')
-Path_face = "./data/face_img_database/"
+Path_face = "./data/face_database/"
 
 
 def distance(face_1, face_2):
@@ -68,12 +68,10 @@ class MainUI(QtWidgets.QWidget):
         self.date = None  # 获取当前日期
         self.timer = None  # 定时器
         self.text = None  # 时间格式化
-        self.log_dialog = None  # 日志弹窗
-        self.admin_dialog = None  # 管理员弹窗
-        self.info_dialog = None  # 信息录入弹窗
         self.pic_num = 0  # 图片存储标记，最多存储15张人脸
         self.sign = 1  # 标记，1代表打卡，2代表录入
         self.idn = None  # id号
+        self.admin = None
         # 相机定时器
         self.timer_camera = QTimer()
         self.cap = cv2.VideoCapture()  # 设置相机
@@ -182,24 +180,32 @@ class MainUI(QtWidgets.QWidget):
     def on_log_dialog(self):
         logcat = LogDialog()
         logcat.setStyleSheet(CommonHelper.read_qss(style_file))
-        self.log_dialog = logcat.exec_()
+        logcat.exec_()
     
     def on_admin_dialog(self):
-        admin = AdminDialog()
-        admin.setStyleSheet(CommonHelper.read_qss(style_file))
-        self.admin_dialog = admin.exec_()
-        if admin.contrast():
-            self.admin_login.setText(admin.contrast())  # 更改菜单名
+        admin_dialog = AdminDialog()
+        admin_dialog.setStyleSheet(CommonHelper.read_qss(style_file))
+        admin_dialog.adname.connect(self.ad_name)
+        admin_dialog.exec_()
+        if self.admin:
+            self.admin_login.setText(self.admin)  # 更改菜单名
     
     def on_info_dialog(self):
         info = InfoDialog()
         info.setStyleSheet(CommonHelper.read_qss(style_file))
-        self.info_dialog = info.exec_()
-        idnumber = info.insert_data()
-        if idnumber is not None:
-            self.idn = idnumber
+        info.idtext.connect(self.id_num)
+        info.exec_()
+        if self.idn:
             self.sign = 2
-            self.new_create_time()
+            # self.new_create_time()
+    
+    @pyqtSlot(str)
+    def id_num(self, s):
+        self.idn = s
+    
+    @pyqtSlot(str)
+    def ad_name(self, n):
+        self.admin = n
     
     def new_create_time(self):
         if self.timer_camera.isActive() is False:
@@ -260,13 +266,13 @@ class MainUI(QtWidgets.QWidget):
                             im_blank[height][width] = self.im_rd[int(equal_face.top()) + height][
                                 int(equal_face.left()) + width]
                     self.pic_num += 1
-                    cv2.imwrite(Path_face + self.idn + "/face_img" + str(self.pic_num) + ".jpg",
-                                im_blank)  # 中文路径无法存储,故采用id为文件名
-                    if self.pic_num >= 15:  # 当提取了15张图后，结束提取
-                        into_db = ThreadIntoDB(self.idn)
-                        into_db.start()
-                        self.pic_num = 0
-                        self.new_create_time()
+                    # cv2.imwrite(Path_face + self.idn + "/face_img" + str(self.pic_num) + ".jpg",
+                    #             im_blank)  # 中文路径无法存储,故采用id为文件名
+                    # if self.pic_num >= 15:  # 当提取了15张图后，结束提取
+                    #     into_db = ThreadIntoDB(self.idn)
+                    #     into_db.start()
+                    #     self.pic_num = 0
+                    #     self.new_create_time()
                 except:
                     print("异常")
             else:
@@ -339,6 +345,7 @@ class AdminDialog(QDialog):
     """
     管理员登录弹窗
     """
+    adname = pyqtSignal(str)
     
     def __init__(self, parent=None):
         super(AdminDialog, self).__init__(parent)
@@ -391,8 +398,8 @@ class AdminDialog(QDialog):
         if self.name_edit.text() and self.passwd_edit.text():
             self.admin_name = load_admin(self.name_edit.text(), self.passwd_edit.text())
             if self.admin_name:
+                self.adname.emit(self.admin_name)
                 self.close()
-                return self.admin_name
             else:
                 self.name_edit.clear()
                 self.passwd_edit.clear()
@@ -403,6 +410,8 @@ class InfoDialog(QDialog):
     """
     录入信息填写
     """
+    
+    idtext = pyqtSignal(str)
     
     def __init__(self, parent=None):
         super(InfoDialog, self).__init__(parent)
@@ -454,11 +463,12 @@ class InfoDialog(QDialog):
         """
         if self.id_edit.text() and self.name_edit.text() and self.department_edit.text():
             # insert_staff(self.id_edit.text(), self.name_edit.text(), self.department_edit.text())
+            string = self.id_edit.text()
+            self.idtext.emit(string)
             self.close()
-            return self.id_edit.text()
         else:
             pass
-            # QMessageBox.information(self, "提示", "输入内容不能为空", QMessageBox.Yes)
+            QMessageBox.information(self, "提示", "输入内容不能为空", QMessageBox.Yes)
 
 
 lock = QMutex()  # 创建进程锁

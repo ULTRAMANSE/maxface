@@ -121,7 +121,7 @@ def delete_data(id):
 
 
 if __name__ == '__main__':
-    # init_db()
+    init_db()
     # delete_data(1234)
     # load_logcat()
-    load_face()
+    # load_face()
