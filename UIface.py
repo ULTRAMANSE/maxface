@@ -8,14 +8,16 @@ from PyQt5.QtGui import QPixmap, QFont, QImage
 from PyQt5.QtCore import QDate, QTime, QTimer, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtSql import QSqlDatabase, QSqlQueryModel
 from PyQt5.Qt import QThread, QMutex
-# from skimage import io as io2
 from face_dbinit import *
 import numpy as np
 import cv2
 import dlib
+import shutil
+import xlwt
+import time
 
 style_file = './UIface.qss'
-facerec = dlib.face_recognition_model_v1("./model/dlib_face_recognition_resnet_model_v1.dat")
+face_rgt = dlib.face_recognition_model_v1("./model/dlib_face_recognition_resnet_model_v1.dat")
 # Dlib 预测器
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor('./model/shape_predictor_68_face_landmarks.dat')
@@ -72,6 +74,8 @@ class MainUI(QtWidgets.QWidget):
         self.sign = 1  # 标记，1代表打卡，2代表录入
         self.idn = None  # id号
         self.admin = None
+        self.im_rd = None
+        
         # 相机定时器
         self.timer_camera = QTimer()
         self.cap = cv2.VideoCapture()  # 设置相机
@@ -176,13 +180,16 @@ class MainUI(QtWidgets.QWidget):
         self.time_label.setText(self.text)
         self.time_label.setAlignment(Qt.AlignCenter)  # 字体居中
     
-    # @staticmethod
     def on_log_dialog(self):
         logcat = LogDialog()
         logcat.setStyleSheet(CommonHelper.read_qss(style_file))
         logcat.exec_()
     
     def on_admin_dialog(self):
+        """
+        打开管理员登录弹窗
+        :return:
+        """
         admin_dialog = AdminDialog()
         admin_dialog.setStyleSheet(CommonHelper.read_qss(style_file))
         admin_dialog.adname.connect(self.ad_name)
@@ -191,13 +198,17 @@ class MainUI(QtWidgets.QWidget):
             self.admin_login.setText(self.admin)  # 更改菜单名
     
     def on_info_dialog(self):
+        """
+        打开信息注册弹窗
+        :return:
+        """
         info = InfoDialog()
         info.setStyleSheet(CommonHelper.read_qss(style_file))
         info.idtext.connect(self.id_num)
         info.exec_()
         if self.idn:
             self.sign = 2
-            # self.new_create_time()
+            self.new_create_time()
     
     @pyqtSlot(str)
     def id_num(self, s):
@@ -266,19 +277,19 @@ class MainUI(QtWidgets.QWidget):
                             im_blank[height][width] = self.im_rd[int(equal_face.top()) + height][
                                 int(equal_face.left()) + width]
                     self.pic_num += 1
-                    # cv2.imwrite(Path_face + self.idn + "/face_img" + str(self.pic_num) + ".jpg",
-                    #             im_blank)  # 中文路径无法存储,故采用id为文件名
-                    # if self.pic_num >= 15:  # 当提取了15张图后，结束提取
-                    #     into_db = ThreadIntoDB(self.idn)
-                    #     into_db.start()
-                    #     self.pic_num = 0
-                    #     self.new_create_time()
+                    cv2.imwrite(Path_face + self.idn + "/face_img" + str(self.pic_num) + ".jpg",
+                                im_blank)  # 中文路径无法存储,故采用id为文件名
+                    if self.pic_num >= 15:  # 当提取了15张图后，结束提取
+                        into_db = ThreadIntoDB(self.idn)
+                        into_db.start()
+                        self.pic_num = 0
+                        self.new_create_time()
                 except:
                     print("异常")
             else:
                 try:
-                    shape = predictor(self.im_rd, equal_face)
-                    face_cap = facerec.compute_face_descriptor(self.im_rd, shape)
+                    shape = predictor(self.im_rd, equal_face)  # 提取特征点
+                    face_cap = face_rgt.compute_face_descriptor(self.im_rd, shape)  # 计算128维向量
                     
                     # 将当前人脸与数据库人脸对比
                     for i, face_data in enumerate(self.feature[1]):
@@ -303,6 +314,7 @@ class LogDialog(QDialog):
         self.table = None
         self.button_export = None
         self.model = None
+        self.file = None
         
         self.load_data()
         self.log_dialog()
@@ -321,6 +333,7 @@ class LogDialog(QDialog):
         self.table.resizeRowsToContents()  # 行根据内容调整大小
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)  # 表单自适应
         self.button_export = QPushButton("导出日志", self)
+        self.button_export.clicked.connect(self.export_xls)
         self.button_export.move(220, 415)
     
     def load_data(self):
@@ -339,6 +352,21 @@ class LogDialog(QDialog):
         self.model.setHeaderData(1, Qt.Horizontal, "姓名")
         self.model.setHeaderData(2, Qt.Horizontal, "打卡时间")
         self.model.setHeaderData(3, Qt.Horizontal, "迟到时长")
+    
+    def export_xls(self):
+        self.file = xlwt.Workbook(encoding="utf-8")
+        log = load_logcat()
+        sheet = self.file.add_sheet(u"日志")
+        row0 = [u"ID", u"姓名", u"打卡时间", u"迟到时长"]
+        for i in range(len(row0)):
+            sheet.write(0, i, row0[i])
+        
+        for i in range(len(log)):
+            for j in range(len(log[i])):
+                sheet.write(i + 1, j, log[i][j])
+        
+        cu_time = time.strftime(u'%Y-%m-%d', time.localtime(time.time()))
+        self.file.save("./" + cu_time + "日志.xls")
 
 
 class AdminDialog(QDialog):
@@ -463,6 +491,7 @@ class InfoDialog(QDialog):
         """
         if self.id_edit.text() and self.name_edit.text() and self.department_edit.text():
             # insert_staff(self.id_edit.text(), self.name_edit.text(), self.department_edit.text())
+            os.mkdir(Path_face + self.id_edit.text())
             string = self.id_edit.text()
             self.idtext.emit(string)
             self.close()
@@ -492,7 +521,7 @@ class ThreadIntoDB(QThread):
             dets = detector(img_gray, 1)
             if len(dets) != 0:  # 检测是否有人脸
                 shape = predictor(img_gray, dets[0])  # 检测人脸特征点
-                face_descriptor = facerec.compute_face_descriptor(img_gray, shape)  # 通过特征点获取人脸描述子
+                face_descriptor = face_rgt.compute_face_descriptor(img_gray, shape)  # 通过特征点获取人脸描述子
                 feature_list.append(face_descriptor)  # 把人脸描述子保存在list中
             else:
                 face_descriptor = 0
@@ -504,6 +533,7 @@ class ThreadIntoDB(QThread):
                     feature_average[j] += feature_list[i][j]
                 feature_average[j] = (feature_average[j]) / len(feature_list)  # 对齐
             insert_face(self.id, feature_average)  # 插入数据库
+        shutil.rmtree(Path_face + self.id)  # 递归删除文件
         lock.unlock()
 
 

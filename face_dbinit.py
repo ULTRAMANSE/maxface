@@ -110,6 +110,15 @@ def load_face():
     return face_data
 
 
+def load_logcat():
+    sql = sqlite3.connect("sys_db.db")
+    cur = sql.cursor()
+    cur.execute("select tb1.id,tb1.sname,tb2.clocktime,tb2.latetime from \
+             staff_tb as tb1 join logcat_tb as tb2 on tb1.id = tb2.id ")
+    results = cur.fetchall()
+    return results
+
+
 def delete_data(id):
     sql = sqlite3.connect("sys_db.db")
     cur = sql.cursor()
