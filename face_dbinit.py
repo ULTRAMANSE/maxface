@@ -20,6 +20,7 @@ def init_db():
             );
             create table if not exists logcat_tb(
             id int not null references staff_tb(id) ON DELETE CASCADE ON UPDATE CASCADE,
+            clcokdate text not null,
             clocktime text not null,
             latetime text not null,
             primary key (id,clocktime)
@@ -59,11 +60,11 @@ def insert_admin(id, name, passwd):
     sql.close()
 
 
-def insert_logcat(id, clock, late):
+def insert_logcat(id, date, times, late):
     sql = sqlite3.connect("sys_db.db")
     cur = sql.cursor()
     cur.execute("PRAGMA foreign_keys = ON;")
-    cur.execute("insert into logcat_tb(id,clocktime,latetime) values (?,?,?)", (id, clock, late))
+    cur.execute("insert into logcat_tb(id,clcokdate,clocktime,latetime) values (?,?,?,?)", (id, date, times, late))
     cur.close()
     sql.commit()
     sql.close()
@@ -84,9 +85,6 @@ def load_admin(id, passwd):
     sql = sqlite3.connect("sys_db.db")
     cur = sql.cursor()
     cur.execute("select id,adname,password from admin_tb where id = (?) and password = (?)", (id, passwd_bs64))
-    # a= cur.fetchall()
-    # for i in a:
-    #     print(i)
     result = cur.fetchone()
     if result:
         cur.close()
@@ -99,21 +97,22 @@ def load_admin(id, passwd):
 
 
 def load_face():
-    face_data = [[], []]
+    face_data = [[], [], []]
     sql = sqlite3.connect("sys_db.db")
     cur = sql.cursor()
-    cur.execute("select id,facearray from face_tb ")
+    cur.execute("select tb1.id,tb1.facearray,tb2.sname from face_tb as tb1 left join staff_tb as tb2 on tb1.id = tb2.id")
     results = cur.fetchall()
     for row in results:
         face_data[0].append(row[0])
         face_data[1].append(decompress_data(row[1])["arr_0"])
+        face_data[2].append(row[2])
     return face_data
 
 
 def load_logcat():
     sql = sqlite3.connect("sys_db.db")
     cur = sql.cursor()
-    cur.execute("select tb1.id,tb1.sname,tb2.clocktime,tb2.latetime from \
+    cur.execute("select tb1.id,tb1.sname,tb2.clcokdate,tb2.clocktime,tb2.latetime from \
              staff_tb as tb1 join logcat_tb as tb2 on tb1.id = tb2.id ")
     results = cur.fetchall()
     return results
@@ -131,6 +130,5 @@ def delete_data(id):
 
 if __name__ == '__main__':
     init_db()
-    # delete_data(1234)
-    # load_logcat()
-    # load_face()
+    load_face()
+    # load_info(1223)

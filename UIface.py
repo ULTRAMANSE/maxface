@@ -75,7 +75,7 @@ class MainUI(QtWidgets.QWidget):
         self.idn = None  # id号
         self.admin = None
         self.im_rd = None
-        
+        self._sign = 0
         # 相机定时器
         self.timer_camera = QTimer()
         self.cap = cv2.VideoCapture()  # 设置相机
@@ -288,16 +288,25 @@ class MainUI(QtWidgets.QWidget):
                     print("异常")
             else:
                 try:
+                    
                     shape = predictor(self.im_rd, equal_face)  # 提取特征点
                     face_cap = face_rgt.compute_face_descriptor(self.im_rd, shape)  # 计算128维向量
                     
                     # 将当前人脸与数据库人脸对比
+                    print(self.feature[0])
+                    print(self.feature[2])
                     for i, face_data in enumerate(self.feature[1]):
                         compare = distance(face_cap, face_data)
                         if compare is True:
-                            self.name_label.setText(str(self.feature[0][i]))
+                            self.name_label.setText(str(self.feature[0][i]) + " " + self.feature[2][i])
+                            break
                 except:
                     print("异常")
+    
+    @pyqtSlot(str)
+    def sgin_set(self, string):
+        self.name_label.setText(string)
+        self._sign = 0
 
 
 class LogDialog(QDialog):
@@ -346,23 +355,25 @@ class LogDialog(QDialog):
         db.open()
         self.model = QSqlQueryModel()
         self.model.setQuery(
-            """select tb1.id,tb1.sname,tb2.clocktime,tb2.latetime from
+            """select tb1.id,tb1.sname,tb2.clcokdate,tb2.clocktime,tb2.latetime from
              staff_tb as tb1 join logcat_tb as tb2 on tb1.id = tb2.id""")
         self.model.setHeaderData(0, Qt.Horizontal, "ID")
         self.model.setHeaderData(1, Qt.Horizontal, "姓名")
-        self.model.setHeaderData(2, Qt.Horizontal, "打卡时间")
-        self.model.setHeaderData(3, Qt.Horizontal, "迟到时长")
+        self.model.setHeaderData(2, Qt.Horizontal, "打卡日期")
+        self.model.setHeaderData(3, Qt.Horizontal, "打卡时间")
+        self.model.setHeaderData(4, Qt.Horizontal, "迟到时长")
     
     def export_xls(self):
         self.file = xlwt.Workbook(encoding="utf-8")
         log = load_logcat()
         sheet = self.file.add_sheet(u"日志")
-        row0 = [u"ID", u"姓名", u"打卡时间", u"迟到时长"]
+        row0 = [u"ID", u"姓名", u"打卡日期", u"打卡时间", u"迟到时长"]
         for i in range(len(row0)):
             sheet.write(0, i, row0[i])
         
         for i in range(len(log)):
             for j in range(len(log[i])):
+                print(log[i][j])
                 sheet.write(i + 1, j, log[i][j])
         
         cu_time = time.strftime(u'%Y-%m-%d', time.localtime(time.time()))
@@ -490,7 +501,7 @@ class InfoDialog(QDialog):
         :return:
         """
         if self.id_edit.text() and self.name_edit.text() and self.department_edit.text():
-            # insert_staff(self.id_edit.text(), self.name_edit.text(), self.department_edit.text())
+            insert_staff(self.id_edit.text(), self.name_edit.text(), self.department_edit.text())
             os.mkdir(Path_face + self.id_edit.text())
             string = self.id_edit.text()
             self.idtext.emit(string)
