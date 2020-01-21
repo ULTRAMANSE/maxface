@@ -130,5 +130,6 @@ def delete_data(id):
 
 if __name__ == '__main__':
     init_db()
-    load_face()
+    insert_admin(123456,"张三","123456")
+    # load_face()
     # load_info(1223)

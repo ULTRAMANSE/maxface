@@ -15,6 +15,7 @@ import dlib
 import shutil
 import xlwt
 import time
+import datetime
 
 style_file = './UIface.qss'
 face_rgt = dlib.face_recognition_model_v1("./model/dlib_face_recognition_resnet_model_v1.dat")
@@ -70,6 +71,7 @@ class MainUI(QtWidgets.QWidget):
         self.date = None  # 获取当前日期
         self.timer = None  # 定时器
         self.text = None  # 时间格式化
+        self.time_flag = "08:00:00"  # 打卡时间设置
         self.pic_num = 0  # 图片存储标记，最多存储15张人脸
         self.sign = 1  # 标记，1代表打卡，2代表录入
         self.idn = None  # id号
@@ -187,15 +189,21 @@ class MainUI(QtWidgets.QWidget):
     
     def on_admin_dialog(self):
         """
-        打开管理员登录弹窗
+        打开管理员弹窗
         :return:
         """
-        admin_dialog = AdminDialog()
-        admin_dialog.setStyleSheet(CommonHelper.read_qss(style_file))
-        admin_dialog.adname.connect(self.ad_name)
-        admin_dialog.exec_()
-        if self.admin:
-            self.admin_login.setText(self.admin)  # 更改菜单名
+        if self.admin_login.text() == "管理员登录":
+            admin_dialog = AdminLoginDialog()
+            admin_dialog.setStyleSheet(CommonHelper.read_qss(style_file))
+            admin_dialog.adname.connect(self.ad_name)
+            admin_dialog.exec_()
+            if self.admin:
+                self.admin_login.setText(self.admin)  # 更改菜单名
+        else:
+            admin_dialog = AdminDialog()
+            admin_dialog.setStyleSheet(CommonHelper.read_qss(style_file))
+            admin_dialog.adname.connect(self.ad_name)
+            admin_dialog.exec_()
     
     def on_info_dialog(self):
         """
@@ -235,6 +243,9 @@ class MainUI(QtWidgets.QWidget):
             self.timer_camera.stop()
             self.sign = 1
             self.cap.release()
+            print(int(self.name_label.text().split(" ")[0]))
+            insert_logcat(int(self.name_label.text().split(" ")[0]), self.date.toString(Qt.ISODate),
+                          self.time.toString(), self.time_subtraction())
             self.button_check.setText("开始打卡")
             self.name_label.setText("暂无打卡信息")
             self.image.setPixmap(QPixmap(r"G:\githublocal\drawable\MaXlogo.jpg").scaled(600, 400))
@@ -293,9 +304,7 @@ class MainUI(QtWidgets.QWidget):
                     face_cap = face_rgt.compute_face_descriptor(self.im_rd, shape)  # 计算128维向量
                     
                     # 将当前人脸与数据库人脸对比
-                    print(self.feature[0])
-                    print(self.feature[2])
-                    for i, face_data in enumerate(self.feature[1]):
+                    for i, face_data in enumerate(self.feature[1]):  # 遍历太慢了，有待优化
                         compare = distance(face_cap, face_data)
                         if compare is True:
                             self.name_label.setText(str(self.feature[0][i]) + " " + self.feature[2][i])
@@ -303,10 +312,20 @@ class MainUI(QtWidgets.QWidget):
                 except:
                     print("异常")
     
-    @pyqtSlot(str)
-    def sgin_set(self, string):
-        self.name_label.setText(string)
-        self._sign = 0
+    def time_subtraction(self):
+        time_string1 = self.date.toString(Qt.ISODate) + " " + self.time_flag
+        time_string2 = self.date.toString(Qt.ISODate) + " " + self.time.toString()
+        ta = time.strptime(time_string2, "%Y-%m-%d %H:%M:%S")
+        tb = time.strptime(time_string1, "%Y-%m-%d %H:%M:%S")
+        y, m, d, H, M, S = ta[0:6]
+        data_timea = datetime.datetime(y, m, d, H, M, S)
+        y, m, d, H, M, S = tb[0:6]
+        data_timeb = datetime.datetime(y, m, d, H, M, S)
+        if data_timea <= data_timeb:
+            return "0"
+        else:
+            secondsDiff = (data_timea - data_timeb).seconds
+            return str(secondsDiff / 60)
 
 
 class LogDialog(QDialog):
@@ -380,14 +399,14 @@ class LogDialog(QDialog):
         self.file.save("./" + cu_time + "日志.xls")
 
 
-class AdminDialog(QDialog):
+class AdminLoginDialog(QDialog):
     """
     管理员登录弹窗
     """
     adname = pyqtSignal(str)
     
     def __init__(self, parent=None):
-        super(AdminDialog, self).__init__(parent)
+        super(AdminLoginDialog, self).__init__(parent)
         self.setFixedSize(350, 250)
         self.setWindowTitle("管理员登录")
         self.setWindowModality(Qt.ApplicationModal)
@@ -509,6 +528,17 @@ class InfoDialog(QDialog):
         else:
             pass
             QMessageBox.information(self, "提示", "输入内容不能为空", QMessageBox.Yes)
+
+
+class AdminDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(350, 250)
+        self.setWindowTitle("设置管理")
+        self.setWindowModality(Qt.ApplicationModal)
+    
+    def set_ui(self):
+        pass
 
 
 lock = QMutex()  # 创建进程锁
