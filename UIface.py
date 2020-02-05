@@ -202,7 +202,7 @@ class MainUI(QtWidgets.QWidget):
         else:
             admin_dialog = AdminDialog()
             admin_dialog.setStyleSheet(CommonHelper.read_qss(style_file))
-            admin_dialog.adname.connect(self.ad_name)
+            # admin_dialog.flag.connect(self.ad_name)
             admin_dialog.exec_()
     
     def on_info_dialog(self):
@@ -531,14 +531,46 @@ class InfoDialog(QDialog):
 
 
 class AdminDialog(QDialog):
+    flag = pyqtSignal(str)
+    
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(350, 250)
+        self.setFixedSize(600, 400)
         self.setWindowTitle("设置管理")
         self.setWindowModality(Qt.ApplicationModal)
+        
+        self.flag_time_label = None
+        self.flag_time_edit = None
+        self.img_path_label = None
+        self.button_img_change = None
+        
+        self.excel_path = None
+        self.path_edit = None
+        self.path_change_button = None
+        
+        self.dele_staff_label = None
+        self.dele_staff_edit = None
+        self.button_dele = None
+        self.set_ui()
     
     def set_ui(self):
-        pass
+        self.flag_time_label = QLabel("设置打卡时间:", self)
+        self.flag_time_label.setFont(QFont("Roman times", 15, QFont.Bold))
+        self.flag_time_edit = QLineEdit(self)
+        
+        self.img_path_label = QLabel(self, "图片路径:")
+        self.button_img_change = QPushButton(self, "修改路径")
+        
+        self.excel_path = QLabel("表格保存路径")
+        self.path_edit = QLineEdit(self)
+        self.path_change_button = QPushButton("修改路径", self)
+        
+        self.dele_staff_label = QLabel("删除员工:", self)
+        self.dele_staff_edit = QLineEdit(self)
+        self.button_dele = QPushButton("删除", self)
+    
+    # def admin_layout(self):
+    #     self.glayout = QGridLayout()
 
 
 lock = QMutex()  # 创建进程锁
@@ -591,7 +623,7 @@ class CommonHelper:
 if __name__ == '__main__':
     App = QApplication(sys.argv)
     style = CommonHelper.read_qss(style_file)
-    ex = MainUI()
+    ex = AdminDialog()
     ex.setStyleSheet(style)
     ex.show()
     sys.exit(App.exec_())
