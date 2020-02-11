@@ -3,7 +3,7 @@ import sys
 import os
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import (QApplication, QMenuBar, QGridLayout, QPushButton, QDialog,
-                             QLabel, QTableView, QHeaderView, QLineEdit, QFormLayout, QMessageBox)
+                             QLabel, QTableView, QHeaderView, QLineEdit, QFormLayout, QMessageBox, QFileDialog)
 from PyQt5.QtGui import QPixmap, QFont, QImage
 from PyQt5.QtCore import QDate, QTime, QTimer, Qt, pyqtSignal, pyqtSlot
 from PyQt5.QtSql import QSqlDatabase, QSqlQueryModel
@@ -547,10 +547,17 @@ class AdminDialog(QDialog):
         self.excel_path = None
         self.path_edit = None
         self.path_change_button = None
+        self.excel_label = None
         
         self.dele_staff_label = None
         self.dele_staff_edit = None
         self.button_dele = None
+        
+        self.button_y = None
+        self.button_n = None
+        
+        self.path_img = None
+        self.path_excel = None
         
         self.set_ui()
         self.admin_layout()
@@ -567,7 +574,6 @@ class AdminDialog(QDialog):
         
         self.excel_label = QLabel(self)
         self.excel_label.setObjectName("admin_dia")
-        # self.path_edit = QLineEdit(self)
         self.path_change_button = QPushButton("修改路径", self)
         self.path_change_button.setObjectName("button_admin")
         
@@ -581,7 +587,9 @@ class AdminDialog(QDialog):
         self.button_y.setObjectName("button_admin")
         self.button_n = QPushButton("取消", self)
         self.button_n.setObjectName("button_admin")
-        self.temp()
+        
+        self.set_laebl()
+        self.set_activity()
     
     def admin_layout(self):
         self.glayout = QGridLayout()
@@ -595,15 +603,36 @@ class AdminDialog(QDialog):
         self.glayout.addWidget(self.dele_staff_label, 10, 1, 1, 6)
         self.glayout.addWidget(self.dele_staff_edit, 10, 6, 1, 10)
         self.glayout.addWidget(self.button_dele, 10, 25, 1, 5)
-        self.glayout.addWidget(self.button_y, 13, 20, 1, 5)
+        self.glayout.addWidget(self.button_y, 13, 18, 1, 5)
         self.glayout.addWidget(self.button_n, 13, 25, 1, 5)
         
         self.setLayout(self.glayout)
     
-    def temp(self):
+    def set_activity(self):
+        self.button_img_change.clicked.connect(self.set_path_img)
+        self.path_change_button.clicked.connect(self.set_path_ex)
+    
+    def set_laebl(self):
         self.path_img = "G:\githublocal\drawable\MaXlogo.jpg"
         self.img_path_label.setText("图片路径：" + self.path_img)
         self.path_excel = "C:\\Users\\ULTRAMANSE\\Desktop"
+        self.excel_label.setText("日志保存路径：" + self.path_excel)
+    
+    def set_path_img(self):
+        file_name, _ = QFileDialog.getOpenFileName(self,
+                                                   "选择文件",
+                                                   "./",
+                                                   "All Files(*);;JPG Files (*.jpg);;PNG Files (*.png);;IMG Files (*.img)"
+                                                   )
+        print(file_name)
+        self.path_img = file_name
+        self.img_path_label.setText("图片路径：" + self.path_img)
+    
+    def set_path_ex(self):
+        ex_dir = QFileDialog.getExistingDirectory(self,
+                                                  "选择文件夹",
+                                                  "./")
+        self.path_excel = ex_dir
         self.excel_label.setText("日志保存路径：" + self.path_excel)
 
 
@@ -657,7 +686,7 @@ class CommonHelper:
 if __name__ == '__main__':
     App = QApplication(sys.argv)
     style = CommonHelper.read_qss(style_file)
-    ex = MainUI()
+    ex = AdminDialog()
     ex.setStyleSheet(style)
     ex.show()
     sys.exit(App.exec_())
