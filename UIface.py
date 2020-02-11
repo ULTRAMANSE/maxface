@@ -531,7 +531,7 @@ class InfoDialog(QDialog):
 
 
 class AdminDialog(QDialog):
-    flag = pyqtSignal(str)
+    flag_re = pyqtSignal(str, str)
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -539,6 +539,7 @@ class AdminDialog(QDialog):
         self.setWindowTitle("设置管理")
         self.setWindowModality(Qt.ApplicationModal)
         
+        self.glayout = None  # 布局
         self.flag_time_label = None
         self.flag_time_edit = None
         self.img_path_label = None
@@ -577,7 +578,7 @@ class AdminDialog(QDialog):
         self.path_change_button = QPushButton("修改路径", self)
         self.path_change_button.setObjectName("button_admin")
         
-        self.dele_staff_label = QLabel("删除员工:", self)
+        self.dele_staff_label = QLabel("删除员工数据:", self)
         self.dele_staff_label.setObjectName("admin_dia")
         self.dele_staff_edit = QLineEdit(self)
         self.button_dele = QPushButton("删除", self)
@@ -598,10 +599,9 @@ class AdminDialog(QDialog):
         self.glayout.addWidget(self.img_path_label, 4, 1, 1, 22)
         self.glayout.addWidget(self.button_img_change, 4, 25, 1, 5)
         self.glayout.addWidget(self.excel_label, 7, 1, 1, 22)
-        # self.glayout.addWidget(self.path_edit, 7, 7, 2, 10)
         self.glayout.addWidget(self.path_change_button, 7, 25, 1, 5)
-        self.glayout.addWidget(self.dele_staff_label, 10, 1, 1, 6)
-        self.glayout.addWidget(self.dele_staff_edit, 10, 6, 1, 10)
+        self.glayout.addWidget(self.dele_staff_label, 10, 1, 1, 7)
+        self.glayout.addWidget(self.dele_staff_edit, 10, 8, 1, 10)
         self.glayout.addWidget(self.button_dele, 10, 25, 1, 5)
         self.glayout.addWidget(self.button_y, 13, 18, 1, 5)
         self.glayout.addWidget(self.button_n, 13, 25, 1, 5)
@@ -611,9 +611,12 @@ class AdminDialog(QDialog):
     def set_activity(self):
         self.button_img_change.clicked.connect(self.set_path_img)
         self.path_change_button.clicked.connect(self.set_path_ex)
+        self.button_y.clicked.connect(self.clicked_yes)
+        self.button_n.clicked.connect(self.close)  # 关闭
+        self.button_dele.clicked.connect(self.dele_staff)
     
     def set_laebl(self):
-        self.path_img = "G:\githublocal\drawable\MaXlogo.jpg"
+        self.path_img = "G:\\githublocal\\drawable\\MaXlogo.jpg"
         self.img_path_label.setText("图片路径：" + self.path_img)
         self.path_excel = "C:\\Users\\ULTRAMANSE\\Desktop"
         self.excel_label.setText("日志保存路径：" + self.path_excel)
@@ -622,18 +625,35 @@ class AdminDialog(QDialog):
         file_name, _ = QFileDialog.getOpenFileName(self,
                                                    "选择文件",
                                                    "./",
-                                                   "All Files(*);;JPG Files (*.jpg);;PNG Files (*.png);;IMG Files (*.img)"
+                                                   "All Files(*);;"
+                                                   "JPG Files (*.jpg);;"
+                                                   "PNG Files (*.png);;"
+                                                   "IMG Files (*.img)"
                                                    )
-        print(file_name)
-        self.path_img = file_name
-        self.img_path_label.setText("图片路径：" + self.path_img)
+        if file_name is not "":
+            self.path_img = file_name
+            self.img_path_label.setText("图片路径：" + self.path_img)
     
     def set_path_ex(self):
         ex_dir = QFileDialog.getExistingDirectory(self,
                                                   "选择文件夹",
                                                   "./")
-        self.path_excel = ex_dir
-        self.excel_label.setText("日志保存路径：" + self.path_excel)
+        if ex_dir is not "":
+            self.path_excel = ex_dir
+            self.excel_label.setText("日志保存路径：" + self.path_excel)
+    
+    def clicked_yes(self):
+        self.flag_re.emit(self.path_img, self.path_excel)
+        self.close()
+    
+    def dele_staff(self):
+        temp = "<font size='9'>是否删除id为" + self.dele_staff_edit.text() + "的员工</font>"
+        print(temp)
+        message = QMessageBox.warning(self, "警告", temp, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if message == QMessageBox.Yes:
+            delete_data(int(self.dele_staff_edit.text()))
+        elif message == QMessageBox.No:
+            pass
 
 
 lock = QMutex()  # 创建进程锁
