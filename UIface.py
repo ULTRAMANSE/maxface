@@ -535,7 +535,7 @@ class AdminDialog(QDialog):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(500, 400)
+        self.setFixedSize(550, 400)
         self.setWindowTitle("设置管理")
         self.setWindowModality(Qt.ApplicationModal)
         
@@ -567,7 +567,7 @@ class AdminDialog(QDialog):
         self.flag_time_label = QLabel("设置打卡时间:", self)
         self.flag_time_label.setObjectName("admin_dia")
         self.flag_time_edit = QLineEdit(self)
-        
+        self.flag_time_edit.setFont(QFont("Roman times", 15, QFont.Bold))
         self.img_path_label = QLabel(self)
         self.img_path_label.setObjectName("admin_dia")
         self.button_img_change = QPushButton("修改图片", self)
@@ -581,6 +581,7 @@ class AdminDialog(QDialog):
         self.dele_staff_label = QLabel("删除员工数据:", self)
         self.dele_staff_label.setObjectName("admin_dia")
         self.dele_staff_edit = QLineEdit(self)
+        self.dele_staff_edit.setFont(QFont("Roman times", 15, QFont.Bold))
         self.button_dele = QPushButton("删除", self)
         self.button_dele.setObjectName("button_admin")
         
@@ -648,13 +649,11 @@ class AdminDialog(QDialog):
     
     def dele_staff(self):
         temp = "<font size='9'>是否删除id为" + self.dele_staff_edit.text() + "的员工</font>"
-        print(temp)
         message = QMessageBox.warning(self, "警告", temp, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if message == QMessageBox.Yes:
             delete_data(int(self.dele_staff_edit.text()))
         elif message == QMessageBox.No:
             pass
-
 
 lock = QMutex()  # 创建进程锁
 
