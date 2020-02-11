@@ -535,7 +535,7 @@ class AdminDialog(QDialog):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(600, 400)
+        self.setFixedSize(500, 400)
         self.setWindowTitle("设置管理")
         self.setWindowModality(Qt.ApplicationModal)
         
@@ -551,26 +551,60 @@ class AdminDialog(QDialog):
         self.dele_staff_label = None
         self.dele_staff_edit = None
         self.button_dele = None
+        
         self.set_ui()
+        self.admin_layout()
     
     def set_ui(self):
         self.flag_time_label = QLabel("设置打卡时间:", self)
-        self.flag_time_label.setFont(QFont("Roman times", 15, QFont.Bold))
+        self.flag_time_label.setObjectName("admin_dia")
         self.flag_time_edit = QLineEdit(self)
         
-        self.img_path_label = QLabel(self, "图片路径:")
-        self.button_img_change = QPushButton(self, "修改路径")
+        self.img_path_label = QLabel(self)
+        self.img_path_label.setObjectName("admin_dia")
+        self.button_img_change = QPushButton("修改图片", self)
+        self.button_img_change.setObjectName("button_admin")
         
-        self.excel_path = QLabel("表格保存路径")
-        self.path_edit = QLineEdit(self)
+        self.excel_label = QLabel(self)
+        self.excel_label.setObjectName("admin_dia")
+        # self.path_edit = QLineEdit(self)
         self.path_change_button = QPushButton("修改路径", self)
+        self.path_change_button.setObjectName("button_admin")
         
         self.dele_staff_label = QLabel("删除员工:", self)
+        self.dele_staff_label.setObjectName("admin_dia")
         self.dele_staff_edit = QLineEdit(self)
         self.button_dele = QPushButton("删除", self)
+        self.button_dele.setObjectName("button_admin")
+        
+        self.button_y = QPushButton("确定", self)
+        self.button_y.setObjectName("button_admin")
+        self.button_n = QPushButton("取消", self)
+        self.button_n.setObjectName("button_admin")
+        self.temp()
     
-    # def admin_layout(self):
-    #     self.glayout = QGridLayout()
+    def admin_layout(self):
+        self.glayout = QGridLayout()
+        self.glayout.addWidget(self.flag_time_label, 1, 1, 1, 7)
+        self.glayout.addWidget(self.flag_time_edit, 1, 8, 1, 15)
+        self.glayout.addWidget(self.img_path_label, 4, 1, 1, 22)
+        self.glayout.addWidget(self.button_img_change, 4, 25, 1, 5)
+        self.glayout.addWidget(self.excel_label, 7, 1, 1, 22)
+        # self.glayout.addWidget(self.path_edit, 7, 7, 2, 10)
+        self.glayout.addWidget(self.path_change_button, 7, 25, 1, 5)
+        self.glayout.addWidget(self.dele_staff_label, 10, 1, 1, 6)
+        self.glayout.addWidget(self.dele_staff_edit, 10, 6, 1, 10)
+        self.glayout.addWidget(self.button_dele, 10, 25, 1, 5)
+        self.glayout.addWidget(self.button_y, 13, 20, 1, 5)
+        self.glayout.addWidget(self.button_n, 13, 25, 1, 5)
+        
+        self.setLayout(self.glayout)
+    
+    def temp(self):
+        self.path_img = "G:\githublocal\drawable\MaXlogo.jpg"
+        self.img_path_label.setText("图片路径：" + self.path_img)
+        self.path_excel = "C:\\Users\\ULTRAMANSE\\Desktop"
+        self.excel_label.setText("日志保存路径：" + self.path_excel)
 
 
 lock = QMutex()  # 创建进程锁
@@ -623,7 +657,7 @@ class CommonHelper:
 if __name__ == '__main__':
     App = QApplication(sys.argv)
     style = CommonHelper.read_qss(style_file)
-    ex = AdminDialog()
+    ex = MainUI()
     ex.setStyleSheet(style)
     ex.show()
     sys.exit(App.exec_())

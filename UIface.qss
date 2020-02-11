@@ -24,7 +24,7 @@ QPushButton
 
 QPushButton:pressed
 {
-     background-color:#CDC5BF;
+    background-color:#CDC5BF;
     border-style:inset;
 
 }
@@ -39,4 +39,30 @@ QPushButton:pressed
     font-size:33px;
     font-weight:bold;
     font-family:Roman times;
+}
+
+#admin_dia{
+    color:rgb(100,100,100,250);
+    border:0px;
+    font-size:15px;
+    font-weight:bold;
+    font-family:Roman times;
+}
+#button_admin{
+    color:rgb(100,100,100,250);
+    background-color:#CDC9C9;
+    border-style:outset;
+    border-width:0.5px;
+    border-color:#CDC9C9;
+    border-radius:10px;
+    font:bold 15px;
+    min-width:70px;
+    min-height:25px;
+    padding:4px;
+}
+#button_admin:pressed
+{
+    background-color:#CDC5BF;
+    border-style:inset;
+
 }
