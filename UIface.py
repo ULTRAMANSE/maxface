@@ -62,6 +62,7 @@ class MainUI(QtWidgets.QWidget):
         self.logcat_menu = None  # 打卡日志
         self.admin_login = None  # 管理员登录
         self.image = None  # 图片初始化
+        self.image_path = r"G:\githublocal\drawable\MaXlogo.jpg"
         self.button_in = None  # 输入按钮
         self.button_check = None  # 打卡按钮
         self.widget = None  # 控件
@@ -144,7 +145,7 @@ class MainUI(QtWidgets.QWidget):
         """
         self.image = QLabel(self)
         self.image.setObjectName('image')
-        self.image.setPixmap(QPixmap(r"G:\githublocal\drawable\MaXlogo.jpg").scaled(600, 400))
+        self.image.setPixmap(QPixmap(self.image_path).scaled(600, 400))
         self.glayout.addWidget(self.image, 1, 15, 15, 15)
     
     def show_time_label(self):
@@ -202,7 +203,7 @@ class MainUI(QtWidgets.QWidget):
         else:
             admin_dialog = AdminDialog()
             admin_dialog.setStyleSheet(CommonHelper.read_qss(style_file))
-            # admin_dialog.flag.connect(self.ad_name)
+            admin_dialog.flag_re.connect(self.path_change_fun)
             admin_dialog.exec_()
     
     def on_info_dialog(self):
@@ -225,6 +226,10 @@ class MainUI(QtWidgets.QWidget):
     @pyqtSlot(str)
     def ad_name(self, n):
         self.admin = n
+    
+    @pyqtSlot(str, str, str)
+    def path_change_fun(self, *args):
+        self.image_path = args[0]
     
     def new_create_time(self):
         if self.timer_camera.isActive() is False:
@@ -531,7 +536,7 @@ class InfoDialog(QDialog):
 
 
 class AdminDialog(QDialog):
-    flag_re = pyqtSignal(str, str)
+    flag_re = pyqtSignal(str, str, str)
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -564,9 +569,11 @@ class AdminDialog(QDialog):
         self.admin_layout()
     
     def set_ui(self):
-        self.flag_time_label = QLabel("设置打卡时间:", self)
+        self.flag_time_label = QLabel("设置打卡时间(24小时制):", self)
         self.flag_time_label.setObjectName("admin_dia")
         self.flag_time_edit = QLineEdit(self)
+        self.flag_time_edit.setAlignment(Qt.AlignCenter)
+        self.flag_time_edit.setInputMask("00:00")
         self.flag_time_edit.setFont(QFont("Roman times", 15, QFont.Bold))
         self.img_path_label = QLabel(self)
         self.img_path_label.setObjectName("admin_dia")
@@ -581,6 +588,7 @@ class AdminDialog(QDialog):
         self.dele_staff_label = QLabel("删除员工数据:", self)
         self.dele_staff_label.setObjectName("admin_dia")
         self.dele_staff_edit = QLineEdit(self)
+        self.dele_staff_edit.setPlaceholderText("请输入ID号")
         self.dele_staff_edit.setFont(QFont("Roman times", 15, QFont.Bold))
         self.button_dele = QPushButton("删除", self)
         self.button_dele.setObjectName("button_admin")
@@ -595,8 +603,8 @@ class AdminDialog(QDialog):
     
     def admin_layout(self):
         self.glayout = QGridLayout()
-        self.glayout.addWidget(self.flag_time_label, 1, 1, 1, 7)
-        self.glayout.addWidget(self.flag_time_edit, 1, 8, 1, 15)
+        self.glayout.addWidget(self.flag_time_label, 1, 1, 1, 10)
+        self.glayout.addWidget(self.flag_time_edit, 1, 11, 1, 10)
         self.glayout.addWidget(self.img_path_label, 4, 1, 1, 22)
         self.glayout.addWidget(self.button_img_change, 4, 25, 1, 5)
         self.glayout.addWidget(self.excel_label, 7, 1, 1, 22)
@@ -624,13 +632,13 @@ class AdminDialog(QDialog):
     
     def set_path_img(self):
         file_name, _ = QFileDialog.getOpenFileName(self,
-                                                   "选择文件",
+                                                   "选择图片",
                                                    "./",
                                                    "All Files(*);;"
                                                    "JPG Files (*.jpg);;"
                                                    "PNG Files (*.png);;"
                                                    "IMG Files (*.img)"
-                                                   )
+                                                   )  # 选择图片
         if file_name is not "":
             self.path_img = file_name
             self.img_path_label.setText("图片路径：" + self.path_img)
@@ -638,13 +646,13 @@ class AdminDialog(QDialog):
     def set_path_ex(self):
         ex_dir = QFileDialog.getExistingDirectory(self,
                                                   "选择文件夹",
-                                                  "./")
+                                                  "./")  # 选择保存路径
         if ex_dir is not "":
             self.path_excel = ex_dir
             self.excel_label.setText("日志保存路径：" + self.path_excel)
     
     def clicked_yes(self):
-        self.flag_re.emit(self.path_img, self.path_excel)
+        self.flag_re.emit(self.path_img, self.path_excel, self.flag_time_edit.text())
         self.close()
     
     def dele_staff(self):
@@ -653,7 +661,8 @@ class AdminDialog(QDialog):
         if message == QMessageBox.Yes:
             delete_data(int(self.dele_staff_edit.text()))
         elif message == QMessageBox.No:
-            pass
+            self.dele_staff_edit.clear()
+
 
 lock = QMutex()  # 创建进程锁
 
@@ -705,7 +714,7 @@ class CommonHelper:
 if __name__ == '__main__':
     App = QApplication(sys.argv)
     style = CommonHelper.read_qss(style_file)
-    ex = AdminDialog()
+    ex = MainUI()
     ex.setStyleSheet(style)
     ex.show()
     sys.exit(App.exec_())
