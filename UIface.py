@@ -18,9 +18,11 @@ import time
 import datetime
 
 style_file = './UIface.qss'
+# 人脸检测器
 face_rgt = dlib.face_recognition_model_v1("./model/dlib_face_recognition_resnet_model_v1.dat")
-# Dlib 预测器
+# 加载人脸检测器
 detector = dlib.get_frontal_face_detector()
+# 特征点检测器
 predictor = dlib.shape_predictor('./model/shape_predictor_68_face_landmarks.dat')
 Path_face = "./data/face_database/"
 
@@ -79,6 +81,7 @@ class MainUI(QtWidgets.QWidget):
         self.admin = None
         self.im_rd = None
         self._sign = 0
+        self.check_face = [[], []]  # 打卡数据列表
         # 相机定时器
         self.timer_camera = QTimer()
         self.cap = cv2.VideoCapture()  # 设置相机
@@ -203,7 +206,7 @@ class MainUI(QtWidgets.QWidget):
         else:
             admin_dialog = AdminDialog()
             admin_dialog.setStyleSheet(CommonHelper.read_qss(style_file))
-            admin_dialog.flag_re.connect(self.path_change_fun)
+            admin_dialog.flag_re.connect(self.path_change_fun)  # 链接槽函数
             admin_dialog.exec_()
     
     def on_info_dialog(self):
@@ -249,6 +252,7 @@ class MainUI(QtWidgets.QWidget):
             self.sign = 1
             self.cap.release()
             print(int(self.name_label.text().split(" ")[0]))
+            print(set([tuple(t) for t in self.check_face]))
             insert_logcat(int(self.name_label.text().split(" ")[0]), self.date.toString(Qt.ISODate),
                           self.time.toString(), self.time_subtraction())
             self.button_check.setText("开始打卡")
@@ -312,7 +316,9 @@ class MainUI(QtWidgets.QWidget):
                     for i, face_data in enumerate(self.feature[1]):  # 遍历太慢了，有待优化
                         compare = distance(face_cap, face_data)
                         if compare is True:
-                            self.name_label.setText(str(self.feature[0][i]) + " " + self.feature[2][i])
+                            str_info = str(self.feature[0][i]) + " " + self.feature[2][i]
+                            self.name_label.setText(str_info)
+                            self.check_face.append(str_info)
                             break
                 except:
                     print("异常")
@@ -330,7 +336,7 @@ class MainUI(QtWidgets.QWidget):
             return "0"
         else:
             secondsDiff = (data_timea - data_timeb).seconds
-            return str(secondsDiff / 60)
+            return str(secondsDiff // 60)
 
 
 class LogDialog(QDialog):
@@ -536,7 +542,7 @@ class InfoDialog(QDialog):
 
 
 class AdminDialog(QDialog):
-    flag_re = pyqtSignal(str, str, str)
+    flag_re = pyqtSignal(str, str, str)  # 自定义信号
     
     def __init__(self, parent=None):
         super().__init__(parent)
