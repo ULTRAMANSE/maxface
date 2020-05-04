@@ -251,12 +251,13 @@ class MainUI(QtWidgets.QWidget):
             self.timer_camera.stop()
             self.sign = 1
             self.cap.release()
-            print(int(self.name_label.text().split(" ")[0]))
-            print(set([tuple(t) for t in self.check_face]))
-            insert_logcat(int(self.name_label.text().split(" ")[0]), self.date.toString(Qt.ISODate),
-                          self.time.toString(), self.time_subtraction())
-            self.button_check.setText("开始打卡")
-            self.name_label.setText("暂无打卡信息")
+            if self.button_check.text() == "停止打卡":
+                print(int(self.name_label.text().split(" ")[0]))
+                print(set([tuple(t) for t in self.check_face]))
+                insert_logcat(int(self.name_label.text().split(" ")[0]), self.date.toString(Qt.ISODate),
+                              self.time.toString(), self.time_subtraction())
+                self.button_check.setText("开始打卡")
+                self.name_label.setText("暂无打卡信息")
             self.image.setPixmap(QPixmap(r"G:\githublocal\drawable\MaXlogo.jpg").scaled(600, 400))
     
     def show_camera(self):
@@ -537,7 +538,6 @@ class InfoDialog(QDialog):
             self.idtext.emit(string)
             self.close()
         else:
-            pass
             QMessageBox.information(self, "提示", "输入内容不能为空", QMessageBox.Yes)
 
 
