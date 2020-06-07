@@ -42,7 +42,7 @@ def distance(face_1, face_2):
     else:
         return True
 
-
+ 
 class MainUI(QtWidgets.QWidget):
     """
     应用主界面
@@ -281,7 +281,7 @@ class MainUI(QtWidgets.QWidget):
                           tuple([equal_face.right(), equal_face.bottom()]),
                           (255, 0, 0), 2)
             show = cv2.resize(self.im_rd, (600, 400))
-            show = cv2.cvtColor(show, cv2.COLOR_BGR2RGB)
+            show = cv2.cvtColor(show, cv2.COLOR_BGR2RGB)  # 颜色通道转换
             show_image = QImage(show.data, show.shape[1], show.shape[0], QImage.Format_RGB888)
             self.image.setPixmap(QPixmap.fromImage(show_image))
             
@@ -314,7 +314,7 @@ class MainUI(QtWidgets.QWidget):
                     face_cap = face_rgt.compute_face_descriptor(self.im_rd, shape)  # 计算128维向量
                     
                     # 将当前人脸与数据库人脸对比
-                    for i, face_data in enumerate(self.feature[1]):  # 遍历太慢了，有待优化
+                    for i, face_data in enumerate(self.feature[1]):  # 对人脸进行遍历
                         compare = distance(face_cap, face_data)
                         if compare is True:
                             str_info = str(self.feature[0][i]) + " " + self.feature[2][i]
@@ -542,6 +542,9 @@ class InfoDialog(QDialog):
 
 
 class AdminDialog(QDialog):
+    """
+    管理页面
+    """
     flag_re = pyqtSignal(str, str, str)  # 自定义信号
     
     def __init__(self, parent=None):
